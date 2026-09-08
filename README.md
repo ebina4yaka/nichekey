@@ -53,6 +53,29 @@ echo no | avdmanager create avd --force --name jp --package "system-images;andro
 | Tomisuke | tomisuke.com/tomisuke-keyboard-layout/ 公式 JIS 配列 |
 | Dvorak(JP) | 標準 Dvorak |
 
+## 機能
+
+- **シフト**: ⇧ キーで次の1キーが大文字英字として直接コミット（英語入力用）
+- **記号ページ**: ?123 キーで数字・記号ページに切替（直接コミット）。あA で戻る
+- **カタカナ**: 変換候補の巡回にカタカナ・ひらがなを含む
+- **キーリピート**: ⌫ 長押しで連続削除（400ms 後 50ms 間隔）
+
+## 変換エンジン（Mozc辞書）
+
+かな→漢字変換は [Mozc](https://github.com/google/mozc) の OSS 辞書（IPAdic ベース、BSD-3-Clause / IPAdic ライセンス）を
+コンパクトなバイナリ（約 45MB・108万語）に変換し、Kotlin 実装の Viterbi + A* で N-best を生成する。
+
+再生成手順:
+
+```sh
+mkdir -p third_party/mozc
+for i in 00 01 02 03 04 05 06 07 08 09; do
+  curl -sfL -o third_party/mozc/dictionary$i.txt \
+    https://raw.githubusercontent.com/google/mozc/master/src/data/dictionary_oss/dictionary$i.txt
+done
+python3 tools/build_mozc_dict.py   # → app/src/main/assets/mozc_dict.bin
+```
+
 ## カスタム配列
 
 設定画面で JSON を編集・保存（保存時に検証）:
@@ -67,8 +90,12 @@ echo no | avdmanager create avd --force --name jp --package "system-images;andro
 
 - `app/src/main/java/.../Layouts.kt` — 配列データ + カスタム配列の保存/読込(SharedPreferences+JSON)
 - `.../Romaji.kt` — ローマ字→かな（貪欲最長一致、促音・拗音・n処理）
-- `.../KanaKanji.kt` — かな→漢字（全文一致の小型辞書のみ。実用変換は辞書エンジン差し替え前提）
-- `.../KeyboardView.kt` — 自前描画のキーボード View（システムジェスチャー領域を避ける）
+- `.../MozcDict.kt` — Mozc辞書バイナリの読込・検索（二分探索）
+- `.../Converter.kt` — Viterbi + A* による N-best 変換・ひらがな→カタカナ
+- `.../Candidates.kt` — 候補生成（辞書N-best + カタカナ + ひらがな）
+- `tools/build_mozc_dict.py` — Mozc TSV → バイナリ辞書変換スクリプト
+- `.../KeyboardView.kt` — 自前描画のキーボード View（シフト/記号ページ/リピート/ジェスチャー領域回避）（システムジェスチャー領域を避ける）
 - `.../JpImeService.kt` — InputMethodService 本体
 - `.../SettingsActivity.kt` — 配列選択・カスタム配列エディタ
+
 # nichekey

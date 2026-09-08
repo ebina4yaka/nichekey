@@ -1,7 +1,10 @@
 .gradle/
 .gradle-home/
 build/
+third_party/mozc/*.txt
+app/src/main/assets/mozc_dict.bin
 local.properties
 .idea/
 *.iml
 .DS_Store
+.kotlin/
