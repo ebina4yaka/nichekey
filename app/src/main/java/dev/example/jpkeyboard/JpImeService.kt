@@ -41,7 +41,14 @@ class JpImeService : InputMethodService() {
                 candIndex = 0
                 show(Composition.display(state))
             } else {
-                currentInputConnection?.commitText(text, 1)
+                val ic = currentInputConnection
+                if (state != Composition.State()) {
+                    // 直接コミット（数字・記号・シフト大文字）の前に構成中の読みを確定する。
+                    // commitText は composing 領域を「置き換える」ため、先に確定しないと入力が消える。
+                    ic?.finishComposingText()
+                    reset()
+                }
+                ic?.commitText(text, 1)
             }
         }
         v.onBackspace = {
