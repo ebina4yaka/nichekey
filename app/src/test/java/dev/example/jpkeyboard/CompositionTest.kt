@@ -47,4 +47,12 @@ class CompositionTest {
     @Test fun nApostrophe() {
         assertEquals("ん", Composition.display(type("n", "'")))
     }
+
+    @Test fun prolongedSoundMark() {
+        // ローマ字モードの "-" キーで長音「ー」を入力
+        assertEquals("ふぁいるー", Composition.display(type("f", "a", "i", "r", "u", "-")))
+        // 保留中の n は ん に確定してから ー
+        assertEquals("こんー", Composition.display(type("k", "o", "n", "-")))
+        assertEquals("こんー", Composition.reading(type("k", "o", "n", "-")))
+    }
 }

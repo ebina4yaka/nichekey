@@ -25,18 +25,27 @@ object Composition {
         s: State,
         ch: String,
     ): State =
-        if (s.tail == "nn") {
-            // 2個目の n は次の入力と結合しうる（"nna"→んな）。1個目だけ ん として確定して残す。
-            type(State(s.kana + "ん", ""), "n" + ch)
-        } else {
-            val tail = s.tail + ch
-            val conv = Wanakana.toKana(tail, IMEMode.ENABLED)
-            when {
-                tail in PENDING_N -> State(s.kana, tail)
-                conv.isNotEmpty() && conv.none { it.code < ASCII_MAX } -> State(s.kana + conv, "")
-                else -> State(s.kana, tail)
+        when {
+            // 長音記号: 保留中の n は ん に確定してから ー を追加
+            ch == "-" -> State(s.kana + (if (s.tail == "n" || s.tail == "nn") "ん" else "") + "ー", "")
+            s.tail == "nn" -> {
+                // 2個目の n は次の入力と結合しうる（"nna"→んな）。1個目だけ ん として確定して残す。
+                type(State(s.kana + "ん", ""), "n" + ch)
             }
+            else -> typeTail(s, s.tail + ch)
         }
+
+    private fun typeTail(
+        s: State,
+        tail: String,
+    ): State {
+        val conv = Wanakana.toKana(tail, IMEMode.ENABLED)
+        return when {
+            tail in PENDING_N -> State(s.kana, tail)
+            conv.isNotEmpty() && conv.none { it.code < ASCII_MAX } -> State(s.kana + conv, "")
+            else -> State(s.kana, tail)
+        }
+    }
 
     fun backspace(s: State): State =
         when {
