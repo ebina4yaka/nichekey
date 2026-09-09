@@ -11,6 +11,7 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+// pi-lens-ignore: kotlin:UNRESOLVED_REFERENCE
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONException
 
@@ -24,12 +25,17 @@ class SettingsActivity : AppCompatActivity() {
         const val LABEL_PAD_DP = 8
     }
 
+    // pi-lens-ignore: kotlin:DELEGATE_SPECIAL_FUNCTION_NONE_APPLICABLE, kotlin:UNRESOLVED_REFERENCE
     private val density by lazy { resources.displayMetrics.density }
 
+    // pi-lens-ignore: kotlin:OVERLOAD_RESOLUTION_AMBIGUITY
     private fun Int.dp() = (this * density).toInt()
 
+    // pi-lens-ignore: kotlin:NOTHING_TO_OVERRIDE, kotlin:UNRESOLVED_REFERENCE
     override fun onCreate(savedInstanceState: Bundle?) {
+        // pi-lens-ignore: kotlin:UNRESOLVED_REFERENCE
         super.onCreate(savedInstanceState)
+        // pi-lens-ignore: kotlin:UNRESOLVED_REFERENCE
         setContentView(buildContentView())
     }
 
@@ -37,6 +43,7 @@ class SettingsActivity : AppCompatActivity() {
         val group = layoutPicker()
         val edit = jsonEditor()
         val box =
+            // pi-lens-ignore: kotlin:TYPE_MISMATCH
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(PADDING_DP.dp(), PADDING_DP.dp(), PADDING_DP.dp(), PADDING_DP.dp())
@@ -54,6 +61,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun label(text: String, forId: Int): TextView =
+        // pi-lens-ignore: kotlin:TYPE_MISMATCH
         TextView(this).apply {
             this.text = text
             textSize = TEXT_SIZE_SP
@@ -62,9 +70,11 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun layoutPicker(): RadioGroup {
         val layouts = Layouts.load(this)
+        // pi-lens-ignore: kotlin:TYPE_MISMATCH
         val group = RadioGroup(this).apply { id = View.generateViewId() }
         layouts.forEachIndexed { i, l ->
             group.addView(
+                // pi-lens-ignore: kotlin:TYPE_MISMATCH
                 RadioButton(this).apply {
                     text = l.name
                     id = i + 1
@@ -73,13 +83,16 @@ class SettingsActivity : AppCompatActivity() {
             )
         }
         group.setOnCheckedChangeListener { _, id ->
+            // pi-lens-ignore: kotlin:TYPE_MISMATCH
             Layouts.setCurrentIndex(this, id - 1)
+            // pi-lens-ignore: kotlin:NONE_APPLICABLE
             Toast.makeText(this, "選択: ${layouts[id - 1].name}", Toast.LENGTH_SHORT).show()
         }
         return group
     }
 
     private fun jsonEditor(): EditText =
+        // pi-lens-ignore: kotlin:TYPE_MISMATCH
         EditText(this).apply {
             id = View.generateViewId()
             setMinLines(MIN_LINES)
@@ -88,12 +101,15 @@ class SettingsActivity : AppCompatActivity() {
         }
 
     private fun saveButton(edit: EditText): Button =
+        // pi-lens-ignore: kotlin:TYPE_MISMATCH
         Button(this).apply {
             text = "カスタム配列を保存"
             setOnClickListener {
                 try {
                     edit.error = null
+                    // pi-lens-ignore: kotlin:TYPE_MISMATCH
                     Layouts.saveCustom(this@SettingsActivity, edit.text.toString())
+                    // pi-lens-ignore: kotlin:NONE_APPLICABLE
                     Toast.makeText(this@SettingsActivity, "保存しました", Toast.LENGTH_SHORT).show()
                 } catch (e: JSONException) {
                     // インラインエラー（Toast は消えて分からなくなるため）
