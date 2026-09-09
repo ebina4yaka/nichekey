@@ -232,17 +232,19 @@ class KeyboardView
             return list
         }
 
+        private fun keyPaintOf(h: Hit): Paint =
+            when {
+                h.act == Act.SHIFT && shift -> activePaint
+                h.act == Act.MODE && mode == Mode.EN -> activePaint // 英字モード中はハイライト
+                h.act == Act.SYMBOL && page == Page.SYMBOL -> activePaint
+                h.act == Act.KEY -> keyPaint
+                else -> funcPaint
+            }
+
         override fun onDraw(canvas: Canvas) {
             canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
             for (h in hits) {
-                val paint =
-                    when {
-                        h.act == Act.SHIFT && shift -> activePaint
-                        h.act == Act.MODE && mode == Mode.EN -> activePaint // 英字モード中はハイライト
-                        h.act == Act.SYMBOL && page == Page.SYMBOL -> activePaint
-                        h.act == Act.KEY -> keyPaint
-                        else -> funcPaint
-                    }
+                val paint = keyPaintOf(h)
                 canvas.drawRoundRect(h.l, h.t + 1, h.r, h.b - 1, CORNER_DP * d, CORNER_DP * d, paint)
                 canvas.drawText(
                     h.label,
