@@ -215,7 +215,7 @@ class KeyboardView
             val fw = width - pad * 2 - gap * (FUNC_ACTS.size - 1)
             val labels =
                 listOf(
-                    if (mode == Mode.KANA) "英字" else "かな",
+                    if (mode == Mode.KANA) "かな" else "英字", // 現在のモードを表示
                     "⇧",
                     "空白/変換",
                     if (page == Page.SYMBOL) "あA" else "?123",
@@ -238,6 +238,7 @@ class KeyboardView
                 val paint =
                     when {
                         h.act == Act.SHIFT && shift -> activePaint
+                        h.act == Act.MODE && mode == Mode.EN -> activePaint // 英字モード中はハイライト
                         h.act == Act.SYMBOL && page == Page.SYMBOL -> activePaint
                         h.act == Act.KEY -> keyPaint
                         else -> funcPaint
