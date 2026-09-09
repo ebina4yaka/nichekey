@@ -46,7 +46,6 @@ echo no | avdmanager create avd --force --name jp --package "system-images;andro
 
 | 配列 | 出典 |
 | --- | --- |
-| QWERTY | 標準 |
 | Eucalyn（決定版） | eucalyn.hatenadiary.jp/entry/about-eucalyn-layout |
 | Eucalyn改（biacco42） | scrapbox.io/self-made-kbds-ja/Eucalyn改配列 |
 | 大西 | o24.works/layout/ 公式 karabiner.json |

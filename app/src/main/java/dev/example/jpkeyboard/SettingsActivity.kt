@@ -1,8 +1,11 @@
 package dev.example.jpkeyboard
 
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.view.Gravity
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -13,6 +16,10 @@ import android.widget.TextView
 import android.widget.Toast
 // pi-lens-ignore: kotlin:UNRESOLVED_REFERENCE
 import androidx.appcompat.app.AppCompatActivity
+// pi-lens-ignore: kotlin:UNRESOLVED_REFERENCE
+import androidx.core.view.ViewCompat
+// pi-lens-ignore: kotlin:UNRESOLVED_REFERENCE
+import androidx.core.view.WindowInsetsCompat
 import org.json.JSONException
 
 /** 配列の選択 + カスタム配列(JSON)の編集画面。Material 3 Expressive テーマ。 */
@@ -31,12 +38,36 @@ class SettingsActivity : AppCompatActivity() {
     // pi-lens-ignore: kotlin:OVERLOAD_RESOLUTION_AMBIGUITY
     private fun Int.dp() = (this * density).toInt()
 
+    /** レンダリング時点の IME 有効状態（設定から戻った時に変化していれば再構築） */
+    private var renderedImeEnabled = false
+
+    private fun isImeEnabled(): Boolean {
+        val imm = getSystemService(InputMethodManager::class.java)
+        return imm?.enabledInputMethodList.orEmpty().any { it.packageName == packageName }
+    }
+
     // pi-lens-ignore: kotlin:NOTHING_TO_OVERRIDE, kotlin:UNRESOLVED_REFERENCE
     override fun onCreate(savedInstanceState: Bundle?) {
         // pi-lens-ignore: kotlin:UNRESOLVED_REFERENCE
         super.onCreate(savedInstanceState)
+        renderedImeEnabled = isImeEnabled()
+        val root = buildContentView()
+        // edge-to-edge (targetSdk 35) でシステムバーの下に描画されないよう inset を適用
+        // pi-lens-ignore: kotlin:TYPE_MISMATCH
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
         // pi-lens-ignore: kotlin:UNRESOLVED_REFERENCE
-        setContentView(buildContentView())
+        setContentView(root)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // システム設定で IME を有効化して戻ってきたら画面を再構築
+        if (renderedImeEnabled != isImeEnabled()) recreate()
+        renderedImeEnabled = isImeEnabled()
     }
 
     private fun buildContentView(): View {
@@ -47,6 +78,7 @@ class SettingsActivity : AppCompatActivity() {
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(PADDING_DP.dp(), PADDING_DP.dp(), PADDING_DP.dp(), PADDING_DP.dp())
+                imeGuide()?.let { addView(it) }
                 addView(label("配列を選択", group.id))
                 addView(group)
                 addView(
@@ -68,6 +100,30 @@ class SettingsActivity : AppCompatActivity() {
             labelFor = forId
         }
 
+    /** IME が無効ならシステム設定への誘導を表示 */
+    private fun imeGuide(): View? {
+        if (isImeEnabled()) return null
+        val box =
+            // pi-lens-ignore: kotlin:TYPE_MISMATCH
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(
+                    label("⚠ システム設定で JpKeyboard キーボードが有効になっていません", View.NO_ID),
+                )
+                addView(
+                    // pi-lens-ignore: kotlin:TYPE_MISMATCH
+                    Button(this@SettingsActivity).apply {
+                        text = "キーボードを有効にする"
+                        setOnClickListener {
+                            // pi-lens-ignore: kotlin:TYPE_MISMATCH
+                            startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
+                        }
+                    },
+                )
+            }
+        return box
+    }
+
     private fun layoutPicker(): RadioGroup {
         val layouts = Layouts.load(this)
         // pi-lens-ignore: kotlin:TYPE_MISMATCH
@@ -77,16 +133,17 @@ class SettingsActivity : AppCompatActivity() {
                 // pi-lens-ignore: kotlin:TYPE_MISMATCH
                 RadioButton(this).apply {
                     text = l.name
-                    id = i + 1
+                    id = View.generateViewId() // i+1 だと generateViewId と衝突し選択解除が効かない
                     isChecked = i == Layouts.currentIndex(this@SettingsActivity)
                 },
             )
         }
         group.setOnCheckedChangeListener { _, id ->
+            val index = group.indexOfChild(group.findViewById(id))
             // pi-lens-ignore: kotlin:TYPE_MISMATCH
-            Layouts.setCurrentIndex(this, id - 1)
+            Layouts.setCurrentIndex(this, index)
             // pi-lens-ignore: kotlin:NONE_APPLICABLE
-            Toast.makeText(this, "選択: ${layouts[id - 1].name}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "選択: ${layouts[index].name}", Toast.LENGTH_SHORT).show()
         }
         return group
     }

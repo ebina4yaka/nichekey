@@ -35,14 +35,6 @@ object Layouts {
     val BUILTIN =
         listOf(
             Layout(
-                "QWERTY",
-                listOf(
-                    row("q", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
-                    row("a", "s", "d", "f", "g", "h", "j", "k", "l"),
-                    row("z", "x", "c", "v", "b", "n", "m", ",", "."),
-                ),
-            ),
-            Layout(
                 "Eucalyn",
                 listOf(
                     row("q", "w", ",", ".", ";", "m", "r", "d", "y", "p"),
