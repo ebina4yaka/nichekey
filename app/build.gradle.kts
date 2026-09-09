@@ -11,8 +11,8 @@ android {
         applicationId = "dev.example.jpkeyboard"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.1.2"
     }
 
     compileOptions {
@@ -23,5 +23,6 @@ android {
 }
 
 dependencies {
+    implementation("io.github.greattusk:wanakana-common-android:1.0.1")
     testImplementation("junit:junit:4.13.2")
 }

@@ -7,25 +7,23 @@ import kotlin.concurrent.thread
 
 /**
  * ローマ字入力 IME。
- * バッファはローマ字文字列のみ。表示は常に Romaji.convert(raw)。
+ * 構成状態は Composition（確定かな + 未確定ローマ字）。変換は WanaKana。
  * 空白で Mozc 辞書によるかな→漢字変換候補を巡回（カタカナ・ひらがな含む）、確定でコミット。
  * シフト中・記号ページのキーは直接コミットされる。
  */
 class JpImeService : InputMethodService() {
-    private var raw = ""
+    private var state = Composition.State()
     private var candidates: List<String> = emptyList()
     private var candIndex = 0
     private var view: KeyboardView? = null
 
-    private val kana: String get() = Romaji.convert(raw)
-
     private fun show(s: String) {
-        Log.d("JpIme", "show: raw=\"$raw\" → \"$s\"")
+        Log.d("JpIme", "show: kana=\"${state.kana}\" tail=\"${state.tail}\" → \"$s\"")
         currentInputConnection?.setComposingText(s, 1)
     }
 
     private fun reset() {
-        raw = ""
+        state = Composition.State()
         candidates = emptyList()
         candIndex = 0
     }
@@ -37,23 +35,30 @@ class JpImeService : InputMethodService() {
         v.layout = Layouts.current(this)
         v.onKey = { text, composing ->
             if (composing) {
-                raw += text
+                state = Composition.type(state, text)
                 candidates = emptyList()
                 candIndex = 0
-                show(kana)
+                show(Composition.display(state))
             } else {
                 currentInputConnection?.commitText(text, 1)
             }
         }
         v.onBackspace = {
-            if (raw.isNotEmpty()) {
-                // かな1単位（例: "ka"→"か"）にまとめて削除する
-                raw = Romaji.deleteLastUnit(raw)
+            if (candidates.isNotEmpty()) {
+                // 候補表示中の Backspace は変換を取り消して読みに戻す（Google 日本語入力と同じ）
                 candidates = emptyList()
                 candIndex = 0
-                show(kana)
+                show(Composition.display(state))
             } else {
-                currentInputConnection?.deleteSurroundingText(1, 0)
+                val next = Composition.backspace(state)
+                if (next != state) {
+                    state = next
+                    candidates = emptyList()
+                    candIndex = 0
+                    show(Composition.display(state))
+                } else {
+                    currentInputConnection?.deleteSurroundingText(1, 0)
+                }
             }
         }
         v.onEnter = {
@@ -62,11 +67,11 @@ class JpImeService : InputMethodService() {
         }
         v.onSpace = {
             val ic = currentInputConnection
-            if (raw.isEmpty()) {
+            if (state == Composition.State()) {
                 ic?.commitText(" ", 1)
             } else {
                 if (candidates.isEmpty()) {
-                    candidates = Candidates.forReading(applicationContext, kana)
+                    candidates = Candidates.forReading(applicationContext, Composition.reading(state))
                 } else {
                     candIndex = (candIndex + 1) % candidates.size
                 }
