@@ -30,10 +30,16 @@ class JpImeService : InputMethodService() {
     }
 
     override fun onCreateInputView(): View {
-        // 44MB 辞書の初回読込を裏で温めておく
+        // 63MB 辞書の初回読込を裏で温めておく
         thread(name = "mozc-dict-warmup") { runCatching { MozcDict.get(applicationContext) } }
         val v = KeyboardView(this)
         v.layout = Layouts.current(this)
+        wireKeyboard(v)
+        view = v
+        return v
+    }
+
+    private fun wireKeyboard(v: KeyboardView) {
         v.onKey = { text, composing ->
             if (composing) {
                 state = Composition.type(state, text)
@@ -95,8 +101,6 @@ class JpImeService : InputMethodService() {
                 ic?.setComposingText(candidates[candIndex], 1)
             }
         }
-        view = v
-        return v
     }
 
     override fun onStartInputView(
