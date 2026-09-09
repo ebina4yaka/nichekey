@@ -15,6 +15,7 @@ class JpImeService : InputMethodService() {
     private var raw = ""
     private var candidates: List<String> = emptyList()
     private var candIndex = 0
+    private var view: KeyboardView? = null
 
     private val kana: String get() = Romaji.convert(raw)
 
@@ -46,7 +47,8 @@ class JpImeService : InputMethodService() {
         }
         v.onBackspace = {
             if (raw.isNotEmpty()) {
-                raw = raw.dropLast(1)
+                // かな1単位（例: "ka"→"か"）にまとめて削除する
+                raw = Romaji.deleteLastUnit(raw)
                 candidates = emptyList()
                 candIndex = 0
                 show(kana)
@@ -72,13 +74,17 @@ class JpImeService : InputMethodService() {
                 ic?.setComposingText(candidates[candIndex], 1)
             }
         }
-        v.onSwitchLayout = {
-            val list = Layouts.load(this)
-            val next = (Layouts.currentIndex(this) + 1) % list.size
-            Layouts.setCurrentIndex(this, next)
-            v.layout = list[next]
-        }
+        view = v
         return v
+    }
+
+    override fun onStartInputView(
+        attribute: android.view.inputmethod.EditorInfo?,
+        restarting: Boolean,
+    ) {
+        super.onStartInputView(attribute, restarting)
+        // 設定画面で変更した配列を表示のたびに反映する
+        view?.layout = Layouts.current(this)
     }
 
     override fun onStartInput(

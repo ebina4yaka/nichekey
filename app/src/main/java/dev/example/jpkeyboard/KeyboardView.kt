@@ -8,7 +8,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 
-/** 配列データを描画するだけの自前ソフトキーボード View。シフト・記号ページ・キーリピート付き。 */
+/** 自前ソフトキーボード View。かな(ローマ字)/英字パレット切替・シフト・記号ページ・キーリピート付き。 */
 class KeyboardView
     @JvmOverloads
     constructor(
@@ -20,7 +20,6 @@ class KeyboardView
         var onBackspace: () -> Unit = {}
         var onEnter: () -> Unit = {}
         var onSpace: () -> Unit = {}
-        var onSwitchLayout: () -> Unit = {}
 
         var layout: Layout = Layouts.BUILTIN[0]
             set(value) {
@@ -33,7 +32,10 @@ class KeyboardView
 
         private enum class Page { MAIN, SYMBOL }
 
+        private enum class Mode { KANA, EN }
+
         private var page = Page.MAIN
+        private var mode = Mode.KANA
         private var shift = false
 
         private val d = resources.displayMetrics.density
@@ -48,7 +50,7 @@ class KeyboardView
                 textSize = 20 * d
             }
 
-        // act: 0=文字キー, 1=配列切替, 2=シフト, 3=空白/変換, 4=記号ページ, 5=確定, 6=バックスペース(リピート)
+        // act: 0=文字キー, 1=かな/英字切替, 2=シフト, 3=空白/変換, 4=記号ページ, 5=確定, 6=バックスペース(リピート)
         private data class Hit(
             val l: Float,
             val t: Float,
@@ -73,23 +75,40 @@ class KeyboardView
         init {
             // ジェスチャーナビ領域（画面最下部）とキーがかぶらないようにする
             setOnApplyWindowInsetsListener { v, insets ->
-                val b =
-                    insets
-                        .getInsets(
-                            WindowInsets.Type.systemGestures() or
-                                WindowInsets.Type.mandatorySystemGestures() or
-                                WindowInsets.Type.navigationBars(),
-                        ).bottom
+                val b = navInset(insets)
                 if (b != bottomInset) {
                     bottomInset = b
+                    // 高さ(bottomInset込み)を再計測 → onSizeChanged → recompute で反映
                     requestLayout()
-                    if (width > 0) recompute()
                 }
                 insets
             }
         }
 
-        private fun currentLayout(): Layout = if (page == Page.SYMBOL) Layouts.SYMBOL else layout
+        private fun navInset(insets: WindowInsets): Int =
+            insets
+                .getInsets(
+                    WindowInsets.Type.systemGestures() or
+                        WindowInsets.Type.mandatorySystemGestures() or
+                        WindowInsets.Type.navigationBars(),
+                ).bottom
+
+        override fun onAttachedToWindow() {
+            super.onAttachedToWindow()
+            // 初回計測で insets リスナーより先に確定させる（初回起動時の OS バー重なり防止）
+            val b = rootWindowInsets?.let { navInset(it) } ?: 0
+            if (b != bottomInset) {
+                bottomInset = b
+                requestLayout()
+            }
+        }
+
+        private fun currentLayout(): Layout =
+            when {
+                page == Page.SYMBOL -> Layouts.SYMBOL
+                mode == Mode.EN -> Layouts.ENGLISH
+                else -> layout
+            }
 
         override fun onSizeChanged(
             w: Int,
@@ -133,7 +152,7 @@ class KeyboardView
             y = bottom - funcH
             val fw = (width - pad * 2 - gap * 5)
             val w = floatArrayOf(0.14f, 0.12f, 0.32f, 0.12f, 0.15f, 0.15f)
-            val labels = arrayOf("配列", "⇧", "空白/変換", if (page == Page.SYMBOL) "あA" else "?123", "確定", "⌫")
+            val labels = arrayOf(if (mode == Mode.KANA) "英字" else "かな", "⇧", "空白/変換", if (page == Page.SYMBOL) "あA" else "?123", "確定", "⌫")
             var x = pad
             for (i in w.indices) {
                 list.add(Hit(x, y, x + fw * w[i], y + funcH, labels[i], null, i + 1))
@@ -179,11 +198,8 @@ class KeyboardView
         private fun fire(h: Hit) {
             when (h.act) {
                 0 -> {
-                    if (page == Page.MAIN && !shift) {
-                        onKey(h.out!!, true)
-                    } else {
-                        onKey(if (shift) h.out!!.uppercase() else h.out!!, false)
-                    }
+                    val direct = shift || mode == Mode.EN || page != Page.MAIN
+                    onKey(if (shift) h.out!!.uppercase() else h.out!!, !direct)
                     if (shift) {
                         shift = false
                         recompute()
@@ -191,7 +207,11 @@ class KeyboardView
                 }
 
                 1 -> {
-                    onSwitchLayout()
+                    // かな ⇄ 英字 切替（行数が変わるので re-measure）
+                    onEnter() // 未確定のローマ字を確定してから切替
+                    mode = if (mode == Mode.KANA) Mode.EN else Mode.KANA
+                    shift = false
+                    requestLayout()
                 }
 
                 2 -> {
