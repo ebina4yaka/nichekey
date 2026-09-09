@@ -42,6 +42,19 @@ class ConverterTest {
         assertEquals("ー", Converter.hira2kata("ー"))
     }
 
+    @Test fun mergeKeepsTopCandidate() {
+        // 回帰: 1位の変換結果がカタカナ補完で末尾に移動しないこと
+        val out = Candidates.merge("ふぁいる", listOf("ファイル", "ファ居る"))
+        assertEquals("ファイル", out[0])
+        assertEquals("ファ居る", out[1])
+        assertEquals("ふぁいる", out.last()) // ひらがなは末尾に補完
+    }
+
+    @Test fun mergeAppendsKanaVariants() {
+        val out = Candidates.merge("わたしは", listOf("私は"))
+        assertEquals(listOf("私は", "ワタシハ", "わたしは"), out)
+    }
+
     @Test fun connectionCostOrdersPaths() {
         // 単語コストが同点でも、品詞接続コストで順位が変わる（bigram 動作確認）
         val source =

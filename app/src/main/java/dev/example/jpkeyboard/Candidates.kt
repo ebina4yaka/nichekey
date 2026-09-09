@@ -9,14 +9,22 @@ object Candidates {
     fun forReading(
         context: Context,
         kana: String,
+    ): List<String> =
+        if (kana.isEmpty()) {
+            emptyList()
+        } else {
+            merge(kana, Converter.nbest(kana, MozcDict.get(context), MAX_CANDIDATES))
+        }
+
+    /** N-best にカタカナ・ひらがなを補完する（既に含まれる語は順位を変えない） */
+    fun merge(
+        kana: String,
+        nbest: List<String>,
     ): List<String> {
-        if (kana.isEmpty()) return emptyList()
-        val out = Converter.nbest(kana, MozcDict.get(context), MAX_CANDIDATES).toMutableList()
+        val out = nbest.toMutableList()
         val kata = Converter.hira2kata(kana)
-        out.remove(kata)
-        out.add(kata)
-        out.remove(kana)
-        out.add(kana)
+        if (kata !in out) out.add(kata)
+        if (kana !in out) out.add(kana)
         return out
     }
 }
