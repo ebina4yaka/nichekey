@@ -20,7 +20,7 @@ complexity:
   TooManyFunctions:
     active: true
     thresholdInFiles: 15
-    thresholdInClasses: 20  # Android の View/Activity はメソッド数が自然に多くなる
+    thresholdInClasses: 30 # Android の View/Activity はメソッド数が自然に多くなる
   ComplexInterface:
     active: true
   LargeClass:

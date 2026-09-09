@@ -49,6 +49,10 @@ class KeyboardView
             const val CORNER_DP = 6
             const val REPEAT_START_MS = 400L
             const val REPEAT_INTERVAL_MS = 50L
+            const val POPUP_SCALE = 1.6f // プレビューの幅倍率
+            const val POPUP_H_SCALE = 1.3f // プレビューの高さ倍率
+            const val POPUP_RISE_SCALE = 1.3f // キー高さ比でどれだけ上に浮かせるか
+            const val POPUP_TEXT_SCALE = 1.6f
             const val COLOR_BG = 0xFF1B1B1F.toInt()
             const val COLOR_KEY = 0xFF2D2F31.toInt()
             const val COLOR_FUNC = 0xFF3A3D40.toInt()
@@ -71,6 +75,7 @@ class KeyboardView
                 textAlign = Paint.Align.CENTER
                 textSize = TEXT_SIZE_DP * d
             }
+        private val popupPaint = Paint(textPaint).apply { textSize = TEXT_SIZE_DP * POPUP_TEXT_SCALE * d }
 
         // act: どの機能キーか（Act 列挙型）
         private data class Hit(
@@ -88,6 +93,10 @@ class KeyboardView
         private var hits: List<Hit> = emptyList()
         private var bottomInset = 0
 
+        /** 押下中のキー（拡大プレビュー表示・スライド追従用） */
+        private var pressed: Hit? = null
+        private var repeating = false
+
         private val repeatAction =
             object : Runnable {
                 override fun run() {
@@ -96,9 +105,19 @@ class KeyboardView
                 }
             }
 
+        /** ⌫ 長押しで発火: 1回削除して連続リピートへ */
+        private val longPress =
+            object : Runnable {
+                override fun run() {
+                    repeating = true
+                    onBackspace()
+                    postDelayed(repeatAction, REPEAT_INTERVAL_MS)
+                }
+            }
+
         init {
             // ジェスチャーナビ領域（画面最下部）とキーがかぶらないようにする
-            setOnApplyWindowInsetsListener { v, insets ->
+            setOnApplyWindowInsetsListener { _, insets ->
                 val b = navInset(insets)
                 if (b != bottomInset) {
                     bottomInset = b
@@ -230,18 +249,76 @@ class KeyboardView
                     textPaint,
                 )
             }
+            pressed?.let { drawPopup(canvas, it) }
         }
+
+        /** 押下中キーを上方向に拡大表示 */
+        private fun drawPopup(
+            canvas: Canvas,
+            h: Hit,
+        ) {
+            val w = (h.r - h.l) * POPUP_SCALE
+            val keyH = h.b - h.t
+            val x = (h.l + h.r) / 2 - w / 2
+            val left = x.coerceIn(0f, width - w)
+            val top = (h.t - keyH * POPUP_RISE_SCALE).coerceAtLeast(PAD_DP * d) // 最上段は画面内にクランプ
+            val bottom = top + keyH * POPUP_H_SCALE
+            val paint = if (h.act == Act.KEY) keyPaint else funcPaint
+            canvas.drawRoundRect(left, top, left + w, bottom, CORNER_DP * d, CORNER_DP * d, paint)
+            canvas.drawText(
+                h.label,
+                left + w / 2,
+                (top + bottom) / 2 - (popupPaint.ascent() + popupPaint.descent()) / 2,
+                popupPaint,
+            )
+        }
+
+        /** 押下: 位置を記録して拡大プレビュー表示（⌫ のみ長押しリピートを予約） */
+        private fun press(e: MotionEvent) {
+            repeating = false
+            pressed = hitAt(e)
+            if (pressed?.act == Act.BACKSPACE) postDelayed(longPress, REPEAT_START_MS)
+            invalidate()
+        }
+
+        /** スライド: 移動先のキーに追従（指を離した位置のキーが確定） */
+        private fun slide(e: MotionEvent) {
+            val h = hitAt(e) ?: return
+            if (h == pressed) return
+            pressed = h
+            if (h.act != Act.BACKSPACE) removeCallbacks(longPress)
+            invalidate()
+        }
+
+        /** 長押しリピート済みなら追加発火なし。最終位置のキーを発火 */
+        private fun release(e: MotionEvent) {
+            val h = if (repeating) null else hitAt(e) ?: pressed
+            removeCallbacks(longPress)
+            removeCallbacks(repeatAction)
+            clearTouch()
+            h?.let { fire(it) }
+        }
+
+        private fun cancel() {
+            removeCallbacks(longPress)
+            removeCallbacks(repeatAction)
+            clearTouch()
+            invalidate()
+        }
+
+        private fun clearTouch() {
+            repeating = false
+            pressed = null
+        }
+
+        private fun hitAt(e: MotionEvent): Hit? = hits.firstOrNull { e.x in it.l..it.r && e.y in it.t..it.b }
 
         override fun onTouchEvent(e: MotionEvent): Boolean {
             when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    val h = hits.firstOrNull { e.x in it.l..it.r && e.y in it.t..it.b } ?: return true
-                    fire(h)
-                }
-
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    removeCallbacks(repeatAction)
-                }
+                MotionEvent.ACTION_DOWN -> press(e)
+                MotionEvent.ACTION_MOVE -> slide(e)
+                MotionEvent.ACTION_UP -> release(e)
+                MotionEvent.ACTION_CANCEL -> cancel()
             }
             return true
         }
@@ -254,7 +331,7 @@ class KeyboardView
                 Act.SPACE -> onSpace()
                 Act.SYMBOL -> togglePage()
                 Act.COMMIT -> onEnter()
-                Act.BACKSPACE -> startRepeat()
+                Act.BACKSPACE -> onBackspace() // タップは1回削除（長押しリピートは longPress が担当）
             }
             invalidate()
         }
@@ -290,11 +367,5 @@ class KeyboardView
             page = if (page == Page.MAIN) Page.SYMBOL else Page.MAIN
             shift = false
             requestLayout()
-        }
-
-        private fun startRepeat() {
-            onBackspace()
-            removeCallbacks(repeatAction)
-            postDelayed(repeatAction, REPEAT_START_MS)
         }
     }
