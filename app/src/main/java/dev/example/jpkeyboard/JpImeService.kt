@@ -2,6 +2,7 @@ package dev.example.jpkeyboard
 
 import android.inputmethodservice.InputMethodService
 import android.util.Log
+import android.view.KeyEvent
 import android.view.View
 import kotlin.concurrent.thread
 
@@ -62,8 +63,16 @@ class JpImeService : InputMethodService() {
             }
         }
         v.onEnter = {
-            currentInputConnection?.finishComposingText()
-            reset()
+            if (state != Composition.State()) {
+                // ローマ字入力（または変換候補表示）中は確定
+                currentInputConnection?.finishComposingText()
+                reset()
+            } else {
+                // 未入力時は Enter キーとして動作（改行・送信などアプリ側の挙動に委ねる）
+                val ic = currentInputConnection
+                ic?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+                ic?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
+            }
         }
         v.onSpace = {
             val ic = currentInputConnection
