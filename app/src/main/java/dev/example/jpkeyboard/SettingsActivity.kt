@@ -1,13 +1,13 @@
 package dev.example.jpkeyboard
 
 import android.content.Intent
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
@@ -20,16 +20,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 // pi-lens-ignore: kotlin:UNRESOLVED_REFERENCE
 import androidx.core.view.WindowInsetsCompat
-import org.json.JSONException
 
-/** 配列の選択 + カスタム配列(JSON)の編集画面。Material 3 Expressive テーマ。 */
+/** 配列の選択 + カラーテーマ選択画面。Material 3 Expressive テーマ。 */
 class SettingsActivity : AppCompatActivity() {
     private companion object {
         const val TEXT_SIZE_SP = 18f
-        const val MIN_LINES = 6
         const val PADDING_DP = 48
         const val LABEL_GAP_DP = 32
         const val LABEL_PAD_DP = 8
+        const val SWATCH_DP = 44
+        const val SWATCH_MARGIN_DP = 8
+        const val SWATCH_STROKE_SELECTED_DP = 4
+        const val SWATCH_STROKE_DP = 1
     }
 
     // pi-lens-ignore: kotlin:DELEGATE_SPECIAL_FUNCTION_NONE_APPLICABLE, kotlin:UNRESOLVED_REFERENCE
@@ -72,7 +74,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun buildContentView(): View {
         val group = layoutPicker()
-        val edit = jsonEditor()
+        val themeRow = themePicker()
         val box =
             // pi-lens-ignore: kotlin:TYPE_MISMATCH
             LinearLayout(this).apply {
@@ -81,13 +83,10 @@ class SettingsActivity : AppCompatActivity() {
                 imeGuide()?.let { addView(it) }
                 addView(label("配列を選択", group.id))
                 addView(group)
-                addView(
-                    label("カスタム配列 (JSON: {\"name\":…,\"rows\":[[\"a\",…],…]} )", edit.id).apply {
-                        setPadding(0, LABEL_GAP_DP.dp(), 0, LABEL_PAD_DP.dp())
-                    },
-                )
-                addView(edit)
-                addView(saveButton(edit))
+                addView(label("テーマ", themeRow.id).apply {
+                    setPadding(0, LABEL_GAP_DP.dp(), 0, LABEL_PAD_DP.dp())
+                })
+                addView(themeRow)
             }
         return ScrollView(this).apply { addView(box) }
     }
@@ -107,9 +106,7 @@ class SettingsActivity : AppCompatActivity() {
             // pi-lens-ignore: kotlin:TYPE_MISMATCH
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(
-                    label("⚠ システム設定で JpKeyboard キーボードが有効になっていません", View.NO_ID),
-                )
+                addView(label("⚠ システム設定で JpKeyboard キーボードが有効になっていません", View.NO_ID))
                 addView(
                     // pi-lens-ignore: kotlin:TYPE_MISMATCH
                     Button(this@SettingsActivity).apply {
@@ -125,8 +122,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun layoutPicker(): RadioGroup {
-        val layouts = Layouts.load(this)
-        // pi-lens-ignore: kotlin:TYPE_MISMATCH
+        val layouts = Layouts.BUILTIN
         val group = RadioGroup(this).apply { id = View.generateViewId() }
         layouts.forEachIndexed { i, l ->
             group.addView(
@@ -148,31 +144,46 @@ class SettingsActivity : AppCompatActivity() {
         return group
     }
 
-    private fun jsonEditor(): EditText =
-        // pi-lens-ignore: kotlin:TYPE_MISMATCH
-        EditText(this).apply {
-            id = View.generateViewId()
-            setMinLines(MIN_LINES)
-            gravity = Gravity.TOP
-            setText(Layouts.customJson(this@SettingsActivity) ?: Layouts.EXAMPLE_JSON)
-        }
+    /** Gboard 風のカラースウォッチ（選択中はリング表示） */
+    private fun themePicker(): View {
+        val row =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                id = View.generateViewId()
+            }
+        val swatches = mutableListOf<GradientDrawable>()
 
-    private fun saveButton(edit: EditText): Button =
-        // pi-lens-ignore: kotlin:TYPE_MISMATCH
-        Button(this).apply {
-            text = "カスタム配列を保存"
-            setOnClickListener {
-                try {
-                    edit.error = null
-                    // pi-lens-ignore: kotlin:TYPE_MISMATCH
-                    Layouts.saveCustom(this@SettingsActivity, edit.text.toString())
-                    // pi-lens-ignore: kotlin:NONE_APPLICABLE
-                    Toast.makeText(this@SettingsActivity, "保存しました", Toast.LENGTH_SHORT).show()
-                } catch (e: JSONException) {
-                    // インラインエラー（Toast は消えて分からなくなるため）
-                    edit.error = "JSONエラー: ${e.message}"
-                    edit.requestFocus()
-                }
+        fun applySelection() {
+            Themes.PRESETS.forEachIndexed { i, t ->
+                val selected = i == Themes.currentIndex(this@SettingsActivity)
+                swatches[i].setColor(t.active)
+                swatches[i].setStroke((if (selected) SWATCH_STROKE_SELECTED_DP else SWATCH_STROKE_DP).dp(), t.text)
             }
         }
+
+        Themes.PRESETS.forEachIndexed { i, t ->
+            val gd = GradientDrawable().apply { shape = GradientDrawable.OVAL }
+            swatches.add(gd)
+            row.addView(
+                View(this).apply {
+                    layoutParams =
+                        LinearLayout.LayoutParams(SWATCH_DP.dp(), SWATCH_DP.dp()).apply {
+                            setMargins(
+                                SWATCH_MARGIN_DP.dp(), SWATCH_MARGIN_DP.dp(),
+                                SWATCH_MARGIN_DP.dp(), SWATCH_MARGIN_DP.dp(),
+                            )
+                        }
+                    background = gd
+                    contentDescription = t.name
+                    setOnClickListener {
+                        // pi-lens-ignore: kotlin:TYPE_MISMATCH
+                        Themes.setCurrentIndex(this@SettingsActivity, i)
+                        applySelection()
+                    }
+                },
+            )
+        }
+        applySelection()
+        return row
+    }
 }

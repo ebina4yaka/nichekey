@@ -38,7 +38,7 @@ echo no | avdmanager create avd --force --name jp --package "system-images;andro
 
 1. 端末の「設定 → システム → 言語と入力 → 画面キーボード」で JpKeyboard を有効化
 2. 入力ボックスでキーボード切替 → JpKeyboard を選択
-3. ランチャーアイコンで配列の選択・カスタム配列(JSON)の編集
+3. ランチャーアイコンで配列の選択・テーマの変更
 
 操作: キー入力→ローマ字バッファへ（自動でかな表示）/ **空白/変換** → かな→漢字候補を巡回 / **確定** → コミット / **英字** ⇄ **かな** で英字入力モード切替。配列は設定画面から選択。
 
@@ -61,6 +61,7 @@ echo no | avdmanager create avd --force --name jp --package "system-images;andro
 - **カタカナ**: 変換候補の巡回にカタカナ・ひらがなを含む
 - **キーリピート**: ⌫ 長押しで連続削除（400ms 後 50ms 間隔）
 - **配列選択**: 設定画面（ランチャーアイコン）からのみ変更できる（キーボード上からは不可）
+- **カラーテーマ**: 設定画面でカラーのスウォッチをタップして変更（ダーク/ライト/ブルー/ピンク）。次回キーボード表示時から反映
 
 ## 変換エンジン（Mozc辞書）
 
@@ -77,22 +78,14 @@ for i in 00 01 02 03 04 05 06 07 08 09; do
   curl -sfL -o third_party/mozc/dictionary$i.txt \
     https://raw.githubusercontent.com/google/mozc/master/src/data/dictionary_oss/dictionary$i.txt
 done
+curl -sfL -o third_party/mozc/connection_single_column.txt \
+  https://raw.githubusercontent.com/google/mozc/master/src/data/dictionary_oss/connection_single_column.txt
 python3 tools/build_mozc_dict.py   # → app/src/main/assets/mozc_dict.bin
 ```
 
-## カスタム配列
-
-設定画面で JSON を編集・保存（保存時に検証）:
-
-```json
-{"name":"独自","rows":[["q","w","e","r","t","y","u","i","o","p"],["a","s","d","f","g","h","j","k","l"],["z","x","c","v","b","n","m",",","."]]}
-```
-
-`rows` は上段→下段の各行のキー出力文字。
-
 ## 構成
 
-- `app/src/main/java/.../Layouts.kt` — 配列データ + カスタム配列の保存/読込(SharedPreferences+JSON)
+- `app/src/main/java/.../Layouts.kt` — 配列データ + カラーテーマ定義 (SharedPreferences)
 - `.../Romaji.kt` — ローマ字→かな（貪欲最長一致、促音・拗音・n処理）
 - `.../MozcDict.kt` — Mozc辞書バイナリの読込・検索（二分探索）
 - `.../Converter.kt` — Viterbi + A* による N-best 変換・ひらがな→カタカナ
@@ -100,6 +93,6 @@ python3 tools/build_mozc_dict.py   # → app/src/main/assets/mozc_dict.bin
 - `tools/build_mozc_dict.py` — Mozc TSV → バイナリ辞書変換スクリプト
 - `.../KeyboardView.kt` — 自前描画のキーボード View（シフト/記号ページ/リピート/ジェスチャー領域回避）（システムジェスチャー領域を避ける）
 - `.../JpImeService.kt` — InputMethodService 本体
-- `.../SettingsActivity.kt` — 配列選択・カスタム配列エディタ
+- `.../SettingsActivity.kt` — 配列選択・テーマ選択
 
 # nichekey

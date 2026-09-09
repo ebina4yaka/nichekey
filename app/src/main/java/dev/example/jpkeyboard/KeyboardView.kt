@@ -53,12 +53,6 @@ class KeyboardView
             const val POPUP_H_SCALE = 1.3f // プレビューの高さ倍率
             const val POPUP_RISE_SCALE = 1.3f // キー高さ比でどれだけ上に浮かせるか
             const val POPUP_TEXT_SCALE = 1.6f
-            // M3 (dark) トーナルパレット
-            const val COLOR_BG = 0xFF141218.toInt() // surface
-            const val COLOR_KEY = 0xFF36343B.toInt() // surfaceContainerHigh
-            const val COLOR_FUNC = 0xFF211F26.toInt() // surfaceContainer
-            const val COLOR_ACTIVE = 0xFF4A4458.toInt() // primaryContainer
-            const val COLOR_TEXT = 0xFFE6E0E9.toInt() // onSurface
         }
 
         private var page = Page.MAIN
@@ -66,17 +60,38 @@ class KeyboardView
         private var shift = false
 
         private val d = resources.displayMetrics.density
-        private val bgPaint = Paint().apply { color = COLOR_BG }
-        private val keyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLOR_KEY }
-        private val funcPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLOR_FUNC }
-        private val activePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLOR_ACTIVE }
+
+        /** カラーテーマ（設定画面で変更、onStartInputView で反映） */
+        var theme: KeyboardTheme = Themes.current(context)
+            set(value) {
+                field = value
+                applyTheme()
+                invalidate()
+            }
+
+        private val bgPaint = Paint()
+        private val keyPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val funcPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val activePaint = Paint(Paint.ANTI_ALIAS_FLAG)
         private val textPaint =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = COLOR_TEXT
                 textAlign = Paint.Align.CENTER
                 textSize = TEXT_SIZE_DP * d
             }
         private val popupPaint = Paint(textPaint).apply { textSize = TEXT_SIZE_DP * POPUP_TEXT_SCALE * d }
+
+        init {
+            applyTheme()
+        }
+
+        private fun applyTheme() {
+            bgPaint.color = theme.bg
+            keyPaint.color = theme.key
+            funcPaint.color = theme.func
+            activePaint.color = theme.active
+            textPaint.color = theme.text
+            popupPaint.color = theme.text
+        }
 
         // act: どの機能キーか（Act 列挙型）
         private data class Hit(

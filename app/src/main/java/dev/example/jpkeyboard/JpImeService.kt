@@ -97,8 +97,9 @@ class JpImeService : InputMethodService() {
         restarting: Boolean,
     ) {
         super.onStartInputView(attribute, restarting)
-        // 設定画面で変更した配列を表示のたびに反映する
+        // 設定画面で変更した配列・テーマを表示のたびに反映する
         view?.layout = Layouts.current(this)
+        view?.theme = Themes.current(this)
     }
 
     override fun onStartInput(

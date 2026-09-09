@@ -1,8 +1,6 @@
 package dev.example.jpkeyboard
 
 import android.content.Context
-import org.json.JSONArray
-import org.json.JSONObject
 
 data class Key(
     val label: String,
@@ -91,54 +89,77 @@ object Layouts {
     /** 最上段に数字行を足した編集レイアウト（かな入力・英字入力共通） */
     fun withNumberRow(l: Layout) = Layout(l.name, listOf(NUMBER_ROW) + l.rows)
 
-    val EXAMPLE_JSON =
-        """
-        {"name":"独自","rows":[
-          ["q","w","e","r","t","y","u","i","o","p"],
-          ["a","s","d","f","g","h","j","k","l"],
-          ["z","x","c","v","b","n","m",",","."]
-        ]}
-        """.trimIndent()
-
-    fun parse(json: String): Layout {
-        val rows = JSONArray(json) // {"name":"…","rows":[["a",…],[…],[…]]} or {"rows":[…]}
-        val obj = runCatching { JSONObject(json) }.getOrNull()
-        val name = obj?.optString("name", "独自") ?: "独自"
-        val rowArr = obj?.getJSONArray("rows") ?: rows
-        return Layout(
-            name,
-            (0 until rowArr.length()).map { r ->
-                val ka = rowArr.getJSONArray(r)
-                Row((0 until ka.length()).map { Key(ka.getString(it)) })
-            },
-        )
-    }
-
     private fun prefs(c: Context) = c.getSharedPreferences("layouts", Context.MODE_PRIVATE)
 
-    fun customJson(c: Context): String? = prefs(c).getString("custom", null)
-
-    fun saveCustom(
-        c: Context,
-        json: String,
-    ) {
-        parse(json) // 検証してから保存
-        prefs(c).edit().putString("custom", json).apply()
-    }
-
-    fun load(c: Context): List<Layout> {
-        val custom = customJson(c)?.let { runCatching { parse(it) }.getOrNull() }
-        return BUILTIN + listOfNotNull(custom)
-    }
-
-    fun currentIndex(c: Context): Int = prefs(c).getInt("index", 0).coerceIn(0, load(c).size - 1)
+    fun currentIndex(c: Context): Int = prefs(c).getInt("index", 0).coerceIn(0, BUILTIN.size - 1)
 
     fun setCurrentIndex(
         c: Context,
         i: Int,
     ) {
-        prefs(c).edit().putInt("index", i.coerceIn(0, load(c).size - 1)).apply()
+        prefs(c).edit().putInt("index", i.coerceIn(0, BUILTIN.size - 1)).apply()
     }
 
-    fun current(c: Context): Layout = load(c)[currentIndex(c)]
+    fun current(c: Context): Layout = BUILTIN[currentIndex(c)]
+}
+
+/** キーボードのカラーテーマ（M3 トーナルパレット準拠） */
+data class KeyboardTheme(
+    val name: String,
+    val bg: Int, // surface
+    val key: Int, // surfaceContainerHigh
+    val func: Int, // surfaceContainer
+    val active: Int, // primaryContainer
+    val text: Int, // onSurface
+)
+
+object Themes {
+    val PRESETS =
+        listOf(
+            KeyboardTheme(
+                "ダーク",
+                bg = 0xFF141218.toInt(),
+                key = 0xFF36343B.toInt(),
+                func = 0xFF211F26.toInt(),
+                active = 0xFF4A4458.toInt(),
+                text = 0xFFE6E0E9.toInt(),
+            ),
+            KeyboardTheme(
+                "ライト",
+                bg = 0xFFFEF7FF.toInt(),
+                key = 0xFFF3EDF7.toInt(),
+                func = 0xFFECE6F0.toInt(),
+                active = 0xFFD0BCFF.toInt(),
+                text = 0xFF1D1B20.toInt(),
+            ),
+            KeyboardTheme(
+                "ブルー",
+                bg = 0xFF101418.toInt(),
+                key = 0xFF2C3849.toInt(),
+                func = 0xFF1B222B.toInt(),
+                active = 0xFF3E4C63.toInt(),
+                text = 0xFFDFE2EB.toInt(),
+            ),
+            KeyboardTheme(
+                "ピンク",
+                bg = 0xFF201A1B.toInt(),
+                key = 0xFF3B2C2E.toInt(),
+                func = 0xFF2A2021.toInt(),
+                active = 0xFF633B48.toInt(),
+                text = 0xFFEAE0E1.toInt(),
+            ),
+        )
+
+    private fun prefs(c: Context) = c.getSharedPreferences("theme", Context.MODE_PRIVATE)
+
+    fun currentIndex(c: Context): Int = prefs(c).getInt("index", 0).coerceIn(0, PRESETS.size - 1)
+
+    fun setCurrentIndex(
+        c: Context,
+        i: Int,
+    ) {
+        prefs(c).edit().putInt("index", i.coerceIn(0, PRESETS.size - 1)).apply()
+    }
+
+    fun current(c: Context): KeyboardTheme = PRESETS[currentIndex(c)]
 }
