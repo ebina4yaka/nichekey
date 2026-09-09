@@ -358,6 +358,7 @@ class KeyboardView
             onEnter() // 未確定のローマ字を確定してから切替
             mode = if (mode == Mode.KANA) Mode.EN else Mode.KANA
             shift = false
+            if (height > 0) recompute() // 行数が同じでも機能キーラベルを更新
             requestLayout()
         }
 
@@ -369,6 +370,7 @@ class KeyboardView
         private fun togglePage() {
             page = if (page == Page.MAIN) Page.SYMBOL else Page.MAIN
             shift = false
+            if (height > 0) recompute() // 行数が同じでも hits を再計算（記号ページの入力に必須）
             requestLayout()
         }
     }
