@@ -41,4 +41,29 @@ class ConverterTest {
         assertEquals("コンニチハ", Converter.hira2kata("こんにちは"))
         assertEquals("ー", Converter.hira2kata("ー"))
     }
+
+    @Test fun connectionCostOrdersPaths() {
+        // 単語コストが同点でも、品詞接続コストで順位が変わる（bigram 動作確認）
+        val source =
+            object : Converter.Source {
+                override fun lookup(r: String): List<Converter.Word> =
+                    when (r) {
+                        "ねこ" ->
+                            listOf(
+                                Converter.Word("猫", 1000, leftId = 1, rightId = 1),
+                                Converter.Word("根古", 1000, leftId = 2, rightId = 2),
+                            )
+                        "が" -> listOf(Converter.Word("が", 1000, leftId = 1, rightId = 1))
+                        else -> emptyList()
+                    }
+
+                override fun connection(
+                    rightId: Int,
+                    leftId: Int,
+                ): Int = if (rightId == 2 && leftId == 1) 0 else 9000
+            }
+        val out = Converter.nbest("ねこが", source, 2)
+        assertEquals("根古が", out[0]) // 接続コスト 0 の経路が優先
+        assertEquals("猫が", out[1])
+    }
 }

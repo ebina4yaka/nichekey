@@ -6,7 +6,11 @@ import org.junit.Test
 import java.io.ByteArrayOutputStream
 
 class MozcDictTest {
-    /** tools/build_mozc_dict.py と同じ形式の小さな辞書を作る */
+    private companion object {
+        const val POS_SIZE = 4
+    }
+
+    /** tools/build_mozc_dict.py (v2) と同じ形式の小さな辞書を作る */
     private fun dict(entries: List<Triple<String, String, Int>>): MozcDict {
         val sorted =
             entries.sortedWith(
@@ -45,12 +49,16 @@ class MozcDictTest {
             index.write(be16(rb.size))
             index.write(byteArrayOf(wb.size.toByte()))
             index.write(be16(cost))
+            index.write(be16(1)) // leftId
+            index.write(be16(2)) // rightId
         }
         val out = ByteArrayOutputStream()
         out.write(byteArrayOf(0, 0, 0, sorted.size.toByte())) // count (u32)
         out.write(sorted.maxOf { it.first.toByteArray(Charsets.UTF_8).size }) // maxReadingLen (u8)
+        out.write(byteArrayOf(0, POS_SIZE.toByte())) // posSize (u16)
         out.write(data.toByteArray())
         out.write(index.toByteArray())
+        out.write(ByteArray(POS_SIZE * POS_SIZE * 2)) // 接続行列（全 0 = 接続コスト 0）
         val ctor = MozcDict::class.java.getDeclaredConstructor(ByteArray::class.java)
         ctor.isAccessible = true
         return ctor.newInstance(out.toByteArray()) as MozcDict
@@ -94,5 +102,17 @@ class MozcDictTest {
             )
         assertEquals("位", d.lookup("い").single().word)
         assertTrue(d.lookup("う").isEmpty())
+    }
+
+    @Test fun v2CarriesPosIds() {
+        val d = dict(listOf(Triple("ねこ", "猫", 1000)))
+        val w = d.lookup("ねこ").single()
+        assertEquals(1, w.leftId)
+        assertEquals(2, w.rightId)
+    }
+
+    @Test fun connectionCostFromMatrix() {
+        val d = dict(listOf(Triple("ねこ", "猫", 1000)))
+        assertEquals(0, d.connection(2, 1)) // 全 0 の行列
     }
 }

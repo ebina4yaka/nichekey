@@ -28,6 +28,8 @@ jobs:
             curl -sfL -o third_party/mozc/dictionary$i.txt \
               https://raw.githubusercontent.com/google/mozc/master/src/data/dictionary_oss/dictionary$i.txt
           done
+          curl -sfL -o third_party/mozc/connection_single_column.txt \
+            https://raw.githubusercontent.com/google/mozc/master/src/data/dictionary_oss/connection_single_column.txt
           python3 tools/build_mozc_dict.py
 
       - name: Build APK

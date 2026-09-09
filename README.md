@@ -65,7 +65,9 @@ echo no | avdmanager create avd --force --name jp --package "system-images;andro
 ## 変換エンジン（Mozc辞書）
 
 かな→漢字変換は [Mozc](https://github.com/google/mozc) の OSS 辞書（IPAdic ベース、BSD-3-Clause / IPAdic ライセンス）を
-コンパクトなバイナリ（約 45MB・108万語）に変換し、Kotlin 実装の Viterbi + A* で N-best を生成する。
+コンパクトなバイナリ（約 63MB・108万語）に変換し、Kotlin 実装の Viterbi + A* で N-best を生成する。
+スコアは単語コストに加えて **品詞接続コスト（bigram）**（connection_single_column.txt 由来の 2672×2672 行列）を用い、
+文節のつながり（助詞・活用など）の自然さを反映する。
 
 再生成手順:
 
