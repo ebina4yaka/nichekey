@@ -34,23 +34,45 @@ class KeyboardView
 
         private enum class Mode { KANA, EN }
 
+        // 機能キーのアクション種別（数字コードを排して列挙型に）
+        private enum class Act { KEY, MODE, SHIFT, SPACE, SYMBOL, COMMIT, BACKSPACE }
+
+        private companion object {
+            // 機能バーの並び順と幅の比率（KEY 以外の順）
+            val FUNC_ACTS = listOf(Act.MODE, Act.SHIFT, Act.SPACE, Act.SYMBOL, Act.COMMIT, Act.BACKSPACE)
+            val FUNC_WIDTHS = listOf(0.14f, 0.12f, 0.32f, 0.12f, 0.15f, 0.15f)
+            const val KEY_H_DP = 44
+            const val GAP_DP = 3
+            const val PAD_DP = 2
+            const val FUNC_H_DP = 48
+            const val TEXT_SIZE_DP = 20
+            const val CORNER_DP = 6
+            const val REPEAT_START_MS = 400L
+            const val REPEAT_INTERVAL_MS = 50L
+            const val COLOR_BG = 0xFF1B1B1F.toInt()
+            const val COLOR_KEY = 0xFF2D2F31.toInt()
+            const val COLOR_FUNC = 0xFF3A3D40.toInt()
+            const val COLOR_ACTIVE = 0xFF2A5A5A.toInt()
+            const val COLOR_TEXT = 0xFFE3E3E3.toInt()
+        }
+
         private var page = Page.MAIN
         private var mode = Mode.KANA
         private var shift = false
 
         private val d = resources.displayMetrics.density
-        private val bgPaint = Paint().apply { color = 0xFF1B1B1F.toInt() }
-        private val keyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF2D2F31.toInt() }
-        private val funcPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF3A3D40.toInt() }
-        private val activePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF2A5A5A.toInt() }
+        private val bgPaint = Paint().apply { color = COLOR_BG }
+        private val keyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLOR_KEY }
+        private val funcPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLOR_FUNC }
+        private val activePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLOR_ACTIVE }
         private val textPaint =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = 0xFFE3E3E3.toInt()
+                color = COLOR_TEXT
                 textAlign = Paint.Align.CENTER
-                textSize = 20 * d
+                textSize = TEXT_SIZE_DP * d
             }
 
-        // act: 0=文字キー, 1=かな/英字切替, 2=シフト, 3=空白/変換, 4=記号ページ, 5=確定, 6=バックスペース(リピート)
+        // act: どの機能キーか（Act 列挙型）
         private data class Hit(
             val l: Float,
             val t: Float,
@@ -58,7 +80,9 @@ class KeyboardView
             val b: Float,
             val label: String,
             val out: String?,
-            val act: Int,
+            val act: Act,
+            /** true ならローマ字変換に渡さず直接コミット（数字行など） */
+            val direct: Boolean = false,
         )
 
         private var hits: List<Hit> = emptyList()
@@ -68,7 +92,7 @@ class KeyboardView
             object : Runnable {
                 override fun run() {
                     onBackspace()
-                    postDelayed(this, 50)
+                    postDelayed(this, REPEAT_INTERVAL_MS)
                 }
             }
 
@@ -106,8 +130,7 @@ class KeyboardView
         private fun currentLayout(): Layout =
             when {
                 page == Page.SYMBOL -> Layouts.SYMBOL
-                mode == Mode.EN -> Layouts.ENGLISH
-                else -> layout
+                else -> Layouts.withNumberRow(layout) // かな/英字とも選択配列 + 数字行
             }
 
         override fun onSizeChanged(
@@ -122,43 +145,71 @@ class KeyboardView
             heightSpec: Int,
         ) {
             // IME ウィンドウに引き伸ばされないよう、内容に応じた高さを返す
-            val keyH = 44 * d
-            val gap = 3 * d
-            val pad = 2 * d
+            val keyH = KEY_H_DP * d
+            val gap = GAP_DP * d
+            val pad = PAD_DP * d
             val rows = currentLayout().rows.size
-            val h = (pad * 2 + keyH * rows + gap * (rows + 1) + 48 * d + bottomInset).toInt()
+            val h = (pad * 2 + keyH * rows + gap * (rows + 1) + FUNC_H_DP * d + bottomInset).toInt()
             setMeasuredDimension(getDefaultSize(suggestedMinimumWidth, widthSpec), h)
         }
 
         private fun recompute() {
-            val gap = 3 * d
-            val pad = 2 * d
-            val funcH = 48 * d
+            val gap = GAP_DP * d
+            val pad = PAD_DP * d
+            val funcH = FUNC_H_DP * d
             val bottom = height - bottomInset // ジェスチャー領域を避ける
             val rows = currentLayout().rows
             val rowH = (bottom - funcH - gap * (rows.size + 1)) / rows.size
+            hits = keyHits(rows, pad, gap, rowH) + funcHits(bottom.toFloat(), funcH, pad, gap)
+        }
+
+        private fun keyLabel(k: Key): String = if (shift) k.out.uppercase() else k.label
+
+        private fun keyHits(
+            rows: List<Row>,
+            pad: Float,
+            gap: Float,
+            rowH: Float,
+        ): List<Hit> {
             val list = mutableListOf<Hit>()
             var y = pad
             for (row in rows) {
                 val kw = (width - pad * 2 - gap * (row.keys.size - 1)) / row.keys.size
                 var x = pad
                 for (k in row.keys) {
-                    val label = if (shift) k.out.uppercase() else k.label
-                    list.add(Hit(x, y, x + kw, y + rowH, label, k.out, 0))
+                    list.add(Hit(x, y, x + kw, y + rowH, keyLabel(k), k.out, Act.KEY, k.direct))
                     x += kw + gap
                 }
                 y += rowH + gap
             }
-            y = bottom - funcH
-            val fw = (width - pad * 2 - gap * 5)
-            val w = floatArrayOf(0.14f, 0.12f, 0.32f, 0.12f, 0.15f, 0.15f)
-            val labels = arrayOf(if (mode == Mode.KANA) "英字" else "かな", "⇧", "空白/変換", if (page == Page.SYMBOL) "あA" else "?123", "確定", "⌫")
+            return list
+        }
+
+        private fun funcHits(
+            bottom: Float,
+            funcH: Float,
+            pad: Float,
+            gap: Float,
+        ): List<Hit> {
+            val y = bottom - funcH
+            val fw = width - pad * 2 - gap * (FUNC_ACTS.size - 1)
+            val labels =
+                listOf(
+                    if (mode == Mode.KANA) "英字" else "かな",
+                    "⇧",
+                    "空白/変換",
+                    if (page == Page.SYMBOL) "あA" else "?123",
+                    "確定",
+                    "⌫",
+                )
+            val list = mutableListOf<Hit>()
             var x = pad
-            for (i in w.indices) {
-                list.add(Hit(x, y, x + fw * w[i], y + funcH, labels[i], null, i + 1))
-                x += fw * w[i] + gap
+            for ((i, act) in FUNC_ACTS.withIndex()) {
+                val w = FUNC_WIDTHS[i]
+                list.add(Hit(x, y, x + fw * w, y + funcH, labels[i], null, act))
+                x += fw * w + gap
             }
-            hits = list
+            return list
         }
 
         override fun onDraw(canvas: Canvas) {
@@ -166,12 +217,12 @@ class KeyboardView
             for (h in hits) {
                 val paint =
                     when {
-                        h.act == 2 && shift -> activePaint
-                        h.act == 4 && page == Page.SYMBOL -> activePaint
-                        h.act == 0 -> keyPaint
+                        h.act == Act.SHIFT && shift -> activePaint
+                        h.act == Act.SYMBOL && page == Page.SYMBOL -> activePaint
+                        h.act == Act.KEY -> keyPaint
                         else -> funcPaint
                     }
-                canvas.drawRoundRect(h.l, h.t + 1, h.r, h.b - 1, 6 * d, 6 * d, paint)
+                canvas.drawRoundRect(h.l, h.t + 1, h.r, h.b - 1, CORNER_DP * d, CORNER_DP * d, paint)
                 canvas.drawText(
                     h.label,
                     (h.l + h.r) / 2,
@@ -197,48 +248,53 @@ class KeyboardView
 
         private fun fire(h: Hit) {
             when (h.act) {
-                0 -> {
-                    val direct = shift || mode == Mode.EN || page != Page.MAIN
-                    onKey(if (shift) h.out!!.uppercase() else h.out!!, !direct)
-                    if (shift) {
-                        shift = false
-                        recompute()
-                    }
-                }
-
-                1 -> {
-                    // かな ⇄ 英字 切替（行数が変わるので re-measure）
-                    onEnter() // 未確定のローマ字を確定してから切替
-                    mode = if (mode == Mode.KANA) Mode.EN else Mode.KANA
-                    shift = false
-                    requestLayout()
-                }
-
-                2 -> {
-                    shift = !shift
-                    recompute()
-                }
-
-                3 -> {
-                    onSpace()
-                }
-
-                4 -> {
-                    page = if (page == Page.MAIN) Page.SYMBOL else Page.MAIN
-                    shift = false
-                    requestLayout()
-                }
-
-                5 -> {
-                    onEnter()
-                }
-
-                6 -> {
-                    onBackspace()
-                    removeCallbacks(repeatAction)
-                    postDelayed(repeatAction, 400)
-                }
+                Act.KEY -> commitKey(h)
+                Act.MODE -> switchMode()
+                Act.SHIFT -> toggleShift()
+                Act.SPACE -> onSpace()
+                Act.SYMBOL -> togglePage()
+                Act.COMMIT -> onEnter()
+                Act.BACKSPACE -> startRepeat()
             }
             invalidate()
+        }
+
+        private fun commitKey(h: Hit) {
+            val out = h.out ?: return
+            onKey(if (shift) out.uppercase() else out, !directOutput(h))
+            if (shift) {
+                shift = false
+                recompute()
+            }
+        }
+
+        private fun directOutput(h: Hit): Boolean {
+            if (h.direct || shift) return true
+            return mode == Mode.EN || page != Page.MAIN
+        }
+
+        private fun switchMode() {
+            // かな ⇄ 英字 切替（行数が変わるので re-measure）
+            onEnter() // 未確定のローマ字を確定してから切替
+            mode = if (mode == Mode.KANA) Mode.EN else Mode.KANA
+            shift = false
+            requestLayout()
+        }
+
+        private fun toggleShift() {
+            shift = !shift
+            recompute()
+        }
+
+        private fun togglePage() {
+            page = if (page == Page.MAIN) Page.SYMBOL else Page.MAIN
+            shift = false
+            requestLayout()
+        }
+
+        private fun startRepeat() {
+            onBackspace()
+            removeCallbacks(repeatAction)
+            postDelayed(repeatAction, REPEAT_START_MS)
         }
     }

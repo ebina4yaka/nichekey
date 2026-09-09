@@ -1,0 +1,102 @@
+# 厳格設定: デフォルト config に上書きする形 (buildUponDefaultConfig = true)
+# 関数型スタイル寄り: 可変性・ループ・副作用を積極的に指摘する
+complexity:
+  active: true
+  ComplexCondition:
+    active: true
+    threshold: 3 # AND/OR 3 個以上で警告 (デフォルト4)
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 10
+  NestedBlockDepth:
+    active: true
+    threshold: 3
+  LongMethod:
+    active: true
+    threshold: 60
+  LongParameterList:
+    active: true
+    functionThreshold: 5
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 15
+    thresholdInClasses: 20  # Android の View/Activity はメソッド数が自然に多くなる
+  ComplexInterface:
+    active: true
+  LargeClass:
+    active: true
+
+coroutines:
+  active: true
+
+exceptions:
+  active: true
+  SwallowedException:
+    active: true
+  TooGenericExceptionCaught:
+    active: true
+  TooGenericExceptionThrown:
+    active: true
+  PrintStackTrace:
+    active: true
+
+naming:
+  active: true
+  FunctionNaming:
+    ignoreAnnotated: ["Composable"]
+
+performance:
+  active: true
+
+potential-bugs:
+  active: true
+  AvoidReferentialEquality:
+    active: true
+
+# 関数型スタイル関連: 可変状態・命令型構文を積極的に指摘
+style:
+  active: true
+  VarCouldBeVal: # var は val にできるなら val に
+    active: true
+  ForbiddenMethodCall: # 副作用系 API の明示的禁止
+    active: true
+    methods:
+      - "kotlin.io.println"
+      - "kotlin.io.print"
+      - "kotlin.io.printlnError"
+  MagicNumber: # マジックナンバー禁止 (名前付き定数へ)
+    active: true
+    ignoreNumbers: ["-1", "0", "1", "2", "100"]
+    ignorePropertyDeclaration: false
+    ignoreCompanionObjectPropertyDeclaration: true
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+  ReturnCount: # 早期 return の乱用を制限 (単一出口に近づける)
+    active: true
+    max: 2
+    excludedFunctions: ["equals"]
+  LoopWithTooManyJumpStatements:
+    active: true
+  UnnecessaryApply:
+    active: true
+  UnnecessaryLet:
+    active: true
+  UseCheckOrError:
+    active: true
+  UseRequire:
+    active: true
+  DataClassShouldBeImmutable:
+    active: true
+  MayBeConst:
+    active: true
+  UseDataClass:
+    active: true
+  ProtectedMemberInFinalClass:
+    active: true
+  UnnecessaryInnerClass:
+    active: true
+
+# ループよりも map/filter/fold を使う助け (実質的な指摘)
+# detekt に直接の "prefer-functional" ルールはないため、
+# 上記 var/ForbiddenMethodCall/MagicNumber と併用して命令型コードを枯らす

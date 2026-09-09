@@ -8,11 +8,17 @@ import java.io.ByteArrayOutputStream
 class MozcDictTest {
     /** tools/build_mozc_dict.py と同じ形式の小さな辞書を作る */
     private fun dict(entries: List<Triple<String, String, Int>>): MozcDict {
-        val sorted = entries.sortedWith(compareBy({ it.first.toByteArray(Charsets.UTF_8).decodeToString() }, { it.second }))
+        val sorted =
+            entries.sortedWith(
+                compareBy(
+                    { it.first.toByteArray(Charsets.UTF_8).decodeToString() },
+                    { it.second },
+                ),
+            )
         val data = ByteArrayOutputStream()
         val index = ByteArrayOutputStream()
         val offsets = mutableListOf<Int>()
-        for ((reading, word, cost) in sorted) {
+        for ((reading, word, _) in sorted) {
             val rb = reading.toByteArray(Charsets.UTF_8)
             val wb = word.toByteArray(Charsets.UTF_8)
             offsets.add(data.size())

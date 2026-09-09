@@ -19,23 +19,24 @@ object Composition {
     // 次の1文字で確定結果が変わるため確定を保留する tail
     private val PENDING_N = setOf("n", "nn")
 
+    private const val ASCII_MAX = 0x80
+
     fun type(
         s: State,
         ch: String,
-    ): State {
+    ): State =
         if (s.tail == "nn") {
             // 2個目の n は次の入力と結合しうる（"nna"→んな）。1個目だけ ん として確定して残す。
-            return type(State(s.kana + "ん", ""), "n" + ch)
-        }
-        val tail = s.tail + ch
-        if (tail in PENDING_N) return State(s.kana, tail)
-        val conv = Wanakana.toKana(tail, IMEMode.ENABLED)
-        return if (conv.isNotEmpty() && conv.none { it.code < 0x80 }) {
-            State(s.kana + conv, "")
+            type(State(s.kana + "ん", ""), "n" + ch)
         } else {
-            State(s.kana, tail)
+            val tail = s.tail + ch
+            val conv = Wanakana.toKana(tail, IMEMode.ENABLED)
+            when {
+                tail in PENDING_N -> State(s.kana, tail)
+                conv.isNotEmpty() && conv.none { it.code < ASCII_MAX } -> State(s.kana + conv, "")
+                else -> State(s.kana, tail)
+            }
         }
-    }
 
     fun backspace(s: State): State =
         when {

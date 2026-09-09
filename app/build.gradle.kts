@@ -1,6 +1,17 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("io.gitlab.arturbosch.detekt")
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.from(rootProject.file("detekt.yml"))
+    baseline = file("detekt-baseline.xml")
+    parallel = true
+    reports.html.required = true
+    reports.xml.required = true
+    reports.sarif.required = true
 }
 
 android {
@@ -11,8 +22,8 @@ android {
         applicationId = "dev.example.jpkeyboard"
         minSdk = 24
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.1.2"
+        versionCode = 4
+        versionName = "0.1.3"
     }
 
     compileOptions {

@@ -7,6 +7,8 @@ import org.json.JSONObject
 data class Key(
     val label: String,
     val out: String = label,
+    /** ローマ字変換に渡さず直接コミットする（数字行など） */
+    val direct: Boolean = false,
 )
 
 data class Row(
@@ -20,6 +22,10 @@ data class Layout(
 
 object Layouts {
     private fun row(vararg keys: String) = Row(keys.map { Key(it) })
+
+    /** 数字行: 全モードの最上段。直接コミットされ、ローマ字変換されない */
+    private val NUMBER_ROW =
+        Row(listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0").map { Key(it, direct = true) })
 
     // 各配列は一次情報から採取:
     //  Eucalyn   : https://eucalyn.hatenadiary.jp/entry/about-eucalyn-layout (決定版の配列図)
@@ -90,20 +96,17 @@ object Layouts {
             ),
         )
 
-    /** 英字パレット（最上段に数字、直接コミットされ、ローマ字変換されない） */
-    val ENGLISH =
-        Layout(
-            "英字",
-            listOf(
-                row("1", "2", "3", "4", "5", "6", "7", "8", "9", "0"),
-                row("q", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
-                row("a", "s", "d", "f", "g", "h", "j", "k", "l"),
-                row("z", "x", "c", "v", "b", "n", "m", ",", "."),
-            ),
-        )
+    /** 最上段に数字行を足した編集レイアウト（かな入力・英字入力共通） */
+    fun withNumberRow(l: Layout) = Layout(l.name, listOf(NUMBER_ROW) + l.rows)
 
-    const val EXAMPLE_JSON =
-        """{"name":"独自","rows":[["q","w","e","r","t","y","u","i","o","p"],["a","s","d","f","g","h","j","k","l"],["z","x","c","v","b","n","m",",","."]]}"""
+    val EXAMPLE_JSON =
+        """
+        {"name":"独自","rows":[
+          ["q","w","e","r","t","y","u","i","o","p"],
+          ["a","s","d","f","g","h","j","k","l"],
+          ["z","x","c","v","b","n","m",",","."]
+        ]}
+        """.trimIndent()
 
     fun parse(json: String): Layout {
         val rows = JSONArray(json) // {"name":"…","rows":[["a",…],[…],[…]]} or {"rows":[…]}
