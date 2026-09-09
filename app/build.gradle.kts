@@ -22,8 +22,8 @@ android {
         applicationId = "dev.example.jpkeyboard"
         minSdk = 24
         targetSdk = 35
-        versionCode = 10
-        versionName = "0.2.5"
+        versionCode = 11
+        versionName = "0.2.6"
     }
 
     compileOptions {
