@@ -46,18 +46,19 @@ class KeyboardView
             const val PAD_DP = 2
             const val FUNC_H_DP = 48
             const val TEXT_SIZE_DP = 20
-            const val CORNER_DP = 6
+            const val CORNER_DP = 16 // M3 Expressive: 大きい角丸
             const val REPEAT_START_MS = 400L
             const val REPEAT_INTERVAL_MS = 50L
             const val POPUP_SCALE = 1.6f // プレビューの幅倍率
             const val POPUP_H_SCALE = 1.3f // プレビューの高さ倍率
             const val POPUP_RISE_SCALE = 1.3f // キー高さ比でどれだけ上に浮かせるか
             const val POPUP_TEXT_SCALE = 1.6f
-            const val COLOR_BG = 0xFF1B1B1F.toInt()
-            const val COLOR_KEY = 0xFF2D2F31.toInt()
-            const val COLOR_FUNC = 0xFF3A3D40.toInt()
-            const val COLOR_ACTIVE = 0xFF2A5A5A.toInt()
-            const val COLOR_TEXT = 0xFFE3E3E3.toInt()
+            // M3 (dark) トーナルパレット
+            const val COLOR_BG = 0xFF141218.toInt() // surface
+            const val COLOR_KEY = 0xFF36343B.toInt() // surfaceContainerHigh
+            const val COLOR_FUNC = 0xFF211F26.toInt() // surfaceContainer
+            const val COLOR_ACTIVE = 0xFF4A4458.toInt() // primaryContainer
+            const val COLOR_TEXT = 0xFFE6E0E9.toInt() // onSurface
         }
 
         private var page = Page.MAIN
@@ -263,8 +264,7 @@ class KeyboardView
             val left = x.coerceIn(0f, width - w)
             val top = (h.t - keyH * POPUP_RISE_SCALE).coerceAtLeast(PAD_DP * d) // 最上段は画面内にクランプ
             val bottom = top + keyH * POPUP_H_SCALE
-            val paint = if (h.act == Act.KEY) keyPaint else funcPaint
-            canvas.drawRoundRect(left, top, left + w, bottom, CORNER_DP * d, CORNER_DP * d, paint)
+            canvas.drawRoundRect(left, top, left + w, bottom, CORNER_DP * d, CORNER_DP * d, activePaint)
             canvas.drawText(
                 h.label,
                 left + w / 2,

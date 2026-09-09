@@ -1,6 +1,5 @@
 package dev.example.jpkeyboard
 
-import android.app.Activity
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -12,10 +11,11 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONException
 
-/** 配列の選択 + カスタム配列(JSON)の編集画面。 */
-class SettingsActivity : Activity() {
+/** 配列の選択 + カスタム配列(JSON)の編集画面。Material 3 Expressive テーマ。 */
+class SettingsActivity : AppCompatActivity() {
     private companion object {
         const val TEXT_SIZE_SP = 18f
         const val MIN_LINES = 6

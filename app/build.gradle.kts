@@ -35,5 +35,7 @@ android {
 
 dependencies {
     implementation("io.github.greattusk:wanakana-common-android:1.0.1")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.google.android.material:material:1.14.0")
     testImplementation("junit:junit:4.13.2")
 }

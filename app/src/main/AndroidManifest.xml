@@ -3,7 +3,7 @@
 
     <application
         android:label="JpKeyboard"
-        android:theme="@android:style/Theme.Material">
+        android:theme="@style/Theme.JpKeyboard">
 
         <activity android:name=".SettingsActivity" android:exported="true">
             <intent-filter>
