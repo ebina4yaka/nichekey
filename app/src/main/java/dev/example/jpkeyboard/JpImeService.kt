@@ -37,9 +37,10 @@ class JpImeService : InputMethodService() {
         v.onKey = { text, composing ->
             if (composing) {
                 state = Composition.type(state, text)
-                candidates = emptyList()
                 candIndex = 0
-                show(Composition.display(state))
+                // Gboard/Google 日本語入力と同じく、入力中から最上位候補を自動表示する
+                candidates = Candidates.forReading(applicationContext, Composition.reading(state))
+                show(if (candidates.isEmpty()) Composition.display(state) else candidates[0])
             } else {
                 currentInputConnection?.commitText(text, 1)
             }
@@ -54,9 +55,10 @@ class JpImeService : InputMethodService() {
                 val next = Composition.backspace(state)
                 if (next != state) {
                     state = next
-                    candidates = emptyList()
                     candIndex = 0
-                    show(Composition.display(state))
+                    // 削除後も自動変換を続ける（表示は最上位候補のまま）
+                    candidates = Candidates.forReading(applicationContext, Composition.reading(state))
+                    show(if (candidates.isEmpty()) Composition.display(state) else candidates[0])
                 } else {
                     currentInputConnection?.deleteSurroundingText(1, 0)
                 }
