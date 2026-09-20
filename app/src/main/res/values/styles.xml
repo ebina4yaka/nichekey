@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Material 3 Expressive (material 1.14.0+) -->
 <resources>
-    <style name="Theme.JpKeyboard" parent="Theme.Material3Expressive.DayNight.NoActionBar" />
+    <style name="Theme.NicheKey" parent="Theme.Material3Expressive.DayNight.NoActionBar" />
 </resources>

@@ -15,11 +15,11 @@ detekt {
 }
 
 android {
-    namespace = "dev.example.jpkeyboard"
+    namespace = "dev.example.nichekey"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "dev.example.jpkeyboard"
+        applicationId = "dev.example.nichekey"
         minSdk = 24
         targetSdk = 35
         versionCode = 12

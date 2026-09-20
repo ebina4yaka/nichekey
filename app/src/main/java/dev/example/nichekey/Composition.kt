@@ -1,4 +1,4 @@
-package dev.example.jpkeyboard
+package dev.example.nichekey
 
 import dev.esnault.wanakana.core.IMEMode
 import dev.esnault.wanakana.core.Wanakana

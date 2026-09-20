@@ -1,4 +1,4 @@
-package dev.example.jpkeyboard
+package dev.example.nichekey
 
 import android.inputmethodservice.InputMethodService
 import android.util.Log
@@ -12,14 +12,14 @@ import kotlin.concurrent.thread
  * 空白で Mozc 辞書によるかな→漢字変換候補を巡回（カタカナ・ひらがな含む）、確定でコミット。
  * シフト中・記号ページのキーは直接コミットされる。
  */
-class JpImeService : InputMethodService() {
+class NicheImeService : InputMethodService() {
     private var state = Composition.State()
     private var candidates: List<String> = emptyList()
     private var candIndex = 0
     private var view: KeyboardView? = null
 
     private fun show(s: String) {
-        Log.d("JpIme", "show: kana=\"${state.kana}\" tail=\"${state.tail}\" → \"$s\"")
+        Log.d("NicheKey", "show: kana=\"${state.kana}\" tail=\"${state.tail}\" → \"$s\"")
         currentInputConnection?.setComposingText(s, 1)
     }
 
@@ -97,7 +97,7 @@ class JpImeService : InputMethodService() {
                 } else {
                     candIndex = (candIndex + 1) % candidates.size
                 }
-                Log.d("JpIme", "candidates: $candidates (index=$candIndex)")
+                Log.d("NicheKey", "candidates: $candidates (index=$candIndex)")
                 ic?.setComposingText(candidates[candIndex], 1)
             }
         }

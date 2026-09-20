@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
-        android:label="JpKeyboard"
-        android:theme="@style/Theme.JpKeyboard">
+        android:label="NicheKey"
+        android:theme="@style/Theme.NicheKey">
 
         <activity android:name=".SettingsActivity" android:exported="true">
             <intent-filter>
@@ -13,9 +13,9 @@
         </activity>
 
         <service
-            android:name=".JpImeService"
+            android:name=".NicheImeService"
             android:exported="true"
-            android:label="JpKeyboard"
+            android:label="NicheKey"
             android:permission="android.permission.BIND_INPUT_METHOD">
             <intent-filter>
                 <action android:name="android.view.InputMethod"/>

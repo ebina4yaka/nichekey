@@ -1,4 +1,4 @@
-package dev.example.jpkeyboard
+package dev.example.nichekey
 
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
@@ -106,7 +106,7 @@ class SettingsActivity : AppCompatActivity() {
             // pi-lens-ignore: kotlin:TYPE_MISMATCH
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(label("⚠ システム設定で JpKeyboard キーボードが有効になっていません", View.NO_ID))
+                addView(label("⚠ システム設定で NicheKey キーボードが有効になっていません", View.NO_ID))
                 addView(
                     // pi-lens-ignore: kotlin:TYPE_MISMATCH
                     Button(this@SettingsActivity).apply {

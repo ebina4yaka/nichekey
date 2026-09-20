@@ -1,4 +1,4 @@
-package dev.example.jpkeyboard
+package dev.example.nichekey
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

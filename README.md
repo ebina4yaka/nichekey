@@ -1,4 +1,4 @@
-# JpKeyboard (Android 日本語ローマ字キーボード)
+# NicheKey (Android 日本語ローマ字キーボード)
 
 nix flakes + Gradle + Kotlin で作る Android IME。ローマ字入力前提の日本語キーボード。
 
@@ -20,9 +20,9 @@ nix develop
 nohup emulator -avd jp -gpu swiftshader_indirect -no-boot-anim -no-snapshot > /tmp/emulator.log 2>&1 &
 adb wait-for-device && adb shell 'while [ "$(getprop sys.boot_completed)" != 1 ]; do sleep 2; done'
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell ime enable dev.example.jpkeyboard/.JpImeService
-adb shell ime set   dev.example.jpkeyboard/.JpImeService
-adb logcat -s JpIme             # IMEのログ（入力バッファ・変換候補）
+adb shell ime enable dev.example.nichekey/.NicheImeService
+adb shell ime set   dev.example.nichekey/.NicheImeService
+adb logcat -s NicheKey          # IMEのログ（入力バッファ・変換候補）
 adb exec-out screencap -p > /tmp/s.png   # スクリーンショット
 ```
 
@@ -36,8 +36,8 @@ echo no | avdmanager create avd --force --name jp --package "system-images;andro
 
 ## 使い方
 
-1. 端末の「設定 → システム → 言語と入力 → 画面キーボード」で JpKeyboard を有効化
-2. 入力ボックスでキーボード切替 → JpKeyboard を選択
+1. 端末の「設定 → システム → 言語と入力 → 画面キーボード」で NicheKey を有効化
+2. 入力ボックスでキーボード切替 → NicheKey を選択
 3. ランチャーアイコンで配列の選択・テーマの変更
 
 操作: キー入力→ローマ字バッファへ（自動でかな表示）/ **空白/変換** → かな→漢字候補を巡回 / **確定** → コミット / **英字** ⇄ **かな** で英字入力モード切替。配列は設定画面から選択。
@@ -93,7 +93,5 @@ python3 tools/build_mozc_dict.py   # → app/src/main/assets/mozc_dict.bin
 - `.../Candidates.kt` — 候補生成（辞書N-best + カタカナ + ひらがな）
 - `tools/build_mozc_dict.py` — Mozc TSV → バイナリ辞書変換スクリプト
 - `.../KeyboardView.kt` — 自前描画のキーボード View（シフト/記号ページ/リピート/ジェスチャー領域回避）（システムジェスチャー領域を避ける）
-- `.../JpImeService.kt` — InputMethodService 本体
+- `.../NicheImeService.kt` — InputMethodService 本体
 - `.../SettingsActivity.kt` — 配列選択・テーマ選択
-
-# nichekey
