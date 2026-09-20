@@ -105,3 +105,8 @@ python3 tools/build_mozc_dict.py   # → app/src/main/assets/mozc_dict.bin
 - `.../NicheImeService.kt` — InputMethodService 本体
 - `.../SettingsActivity.kt` — 配列選択・テーマ選択
 - `tools/build_mozc_dict.py` — Mozc TSV → バイナリ辞書変換スクリプト
+
+## ライセンス
+
+本体は [MIT](LICENSE)。同梱する辞書データと依存ライブラリの表示は
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にある。
