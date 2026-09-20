@@ -154,7 +154,7 @@ object Converter {
         var pops = 0
         while (pq.isNotEmpty() && out.size < lattice.n) {
             if (pops++ >= POP_LIMIT) break
-            val cur = pq.poll()
+            val cur = pq.poll() ?: break
             if (cur.node.end == lattice.len) {
                 collect(cur, seen, out)
             } else {
